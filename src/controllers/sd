@@ -1,0 +1,106 @@
+// src/controllers/messageController.js
+
+const client = require('../services/whatsappClient');
+const { Location, Buttons, List, Poll } = require('whatsapp-web.js');
+
+client.on('message', async (msg) => {
+    console.log('MESSAGE RECEIVED from:', msg.from, 'body:', msg.body);
+
+    if (msg.body === '!ping reply') {
+        msg.reply('pong');
+
+    } else if (msg.body === '!ping') {
+        // Send a new message to the same chat
+        await client.sendMessage(msg.from, 'pong');
+
+    } else if (msg.body.startsWith('!sendto ')) {
+        // Direct send a new message to specific id
+        let parts = msg.body.split(' ');
+        let number = parts[1];
+        let message = msg.body.substring(msg.body.indexOf(number) + number.length).trim();
+        number = number.includes('@c.us') ? number : `${number}@c.us`;
+        let chat = await msg.getChat();
+        chat.sendSeen();
+        await client.sendMessage(number, message);
+
+    } else if (msg.body.startsWith('!subject ')) {
+        // Change the group subject
+        let chat = await msg.getChat();
+        if (chat.isGroup) {
+            let newSubject = msg.body.slice(9).trim();
+            chat.setSubject(newSubject);
+        } else {
+            msg.reply('This command can only be used in a group!');
+        }
+
+    } else if (msg.body.startsWith('!echo ')) {
+        // Replies with the same message
+        msg.reply(msg.body.slice(6));
+
+    } else if (msg.body.startsWith('!preview ')) {
+        const text = msg.body.slice(9);
+        msg.reply(text, null, { linkPreview: true });
+
+    } else if (msg.body.startsWith('!desc ')) {
+        // Change the group description
+        let chat = await msg.getChat();
+        if (chat.isGroup) {
+            let newDescription = msg.body.slice(6).trim();
+            chat.setDescription(newDescription);
+        } else {
+            msg.reply('This command can only be used in a group!');
+        }
+
+    } else if (msg.body === '!leave') {
+        // Leave the group
+        let chat = await msg.getChat();
+        if (chat.isGroup) {
+            chat.leave();
+        } else {
+            msg.reply('This command can only be used in a group!');
+        }
+
+    } else if (msg.body.startsWith('!join ')) {
+        const inviteCode = msg.body.split(' ')[1];
+        try {
+            await client.acceptInvite(inviteCode);
+            msg.reply('Joined the group!');
+        } catch (e) {
+            msg.reply('That invite code seems to be invalid.');
+        }
+
+    } else if (msg.body.startsWith('!addmembers')) {
+        const group = await msg.getChat();
+        const result = await group.addParticipants(['number1@c.us', 'number2@c.us', 'number3@c.us']);
+        console.log('Add members result:', result);
+
+    } else if (msg.body === '!creategroup') {
+        const participantsToAdd = ['number1@c.us', 'number2@c.us', 'number3@c.us'];
+        const result = await client.createGroup('Group Title', participantsToAdd);
+        console.log('Create group result:', result);
+
+    } else if (msg.body === '!groupinfo') {
+        let chat = await msg.getChat();
+        if (chat.isGroup) {
+            msg.reply(`*Group Details*\nName: ${chat.name}\nDescription: ${chat.description}\nCreated At: ${chat.createdAt.toString()}\nCreated By: ${chat.owner.user}\nParticipant count: ${chat.participants.length}`);
+        } else {
+            msg.reply('This command can only be used in a group!');
+        }
+
+    } else if (msg.body === '!chats') {
+        const chats = await client.getChats();
+        await client.sendMessage(msg.from, `The bot has ${chats.length} chats open.`);
+
+    } else if (msg.body === '!info') {
+        let info = client.info;
+        await client.sendMessage(msg.from, `*Connection info*\nUser name: ${info.pushname}\nMy number: ${info.wid.user}\nPlatform: ${info.platform}`);
+
+    } else if (msg.body === '!mediainfo' && msg.hasMedia) {
+        const attachmentData = await msg.downloadMedia();
+        msg.reply(`*Media info*\nMimeType: ${attachmentData.mimetype}\nFilename: ${attachmentData.filename}\nData (length): ${attachmentData.data.length}`);
+
+    } else if (msg.body === '!quoteinfo' && msg.hasQuotedMsg) {
+        const quotedMsg = await msg.getQuotedMessage();
+        quotedMsg.reply(`ID: ${quotedMsg.id._serialized}\nType: ${quotedMsg.type}\nAuthor: ${quotedMsg.author || quotedMsg.from}\nTimestamp: ${quotedMsg.timestamp}\nHas Media? ${quotedMsg.hasMedia}`);
+
+    } else if (msg.body =
