@@ -68,3 +68,4 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+.wwebjs_cache/2.3000.1020702552.html
