@@ -1,0 +1,301 @@
+{
+  "name": "WhatsApp AI Assistant Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "webhook-test/webhook-test/9e56fa47-b19d-4dd7-881a-a7b66aa28554",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "exists"
+            }
+          ]
+        }
+      },
+      "id": "if-has-action",
+      "name": "Check if Request has Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.action }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "summarize",
+              "outputKey": "type",
+              "output": "summarize"
+            },
+            {
+              "value2": "translate",
+              "outputKey": "type",
+              "output": "translate"
+            },
+            {
+              "value2": "extract",
+              "outputKey": "type",
+              "output": "extract"
+            },
+            {
+              "value2": "transcribe",
+              "outputKey": "type",
+              "output": "transcribe"
+            },
+            {
+              "value2": "textToSpeech",
+              "outputKey": "type",
+              "output": "textToSpeech"
+            }
+          ]
+        },
+        "fallbackOutput": "unknown"
+      },
+      "id": "switch-action-type",
+      "name": "Switch on Action Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"summary\": \"I've analyzed the conversation and here's a summary: \" + $json.content.substring(0, 100) + \"...\\n\\nKey points discussed:\\n- First topic mentioned\\n- Important decisions\\n- Action items noted\\n\\nThis summarizes the recent messages in this chat.\"\n}",
+        "options": {}
+      },
+      "id": "response-summarize",
+      "name": "Respond with Summary",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"translation\": \"{{$json.text}} [Translated to {{$json.language}}]\"\n}",
+        "options": {}
+      },
+      "id": "response-translate",
+      "name": "Respond with Translation",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"dates\": [\"2023-06-15\", \"Next Monday\"],\n  \"emails\": [\"example@example.com\"],\n  \"tasks\": [\"Complete the report\", \"Call client\"],\n  \"entities\": [\n    {\"type\": \"person\", \"value\": \"John Doe\"},\n    {\"type\": \"organization\", \"value\": \"Acme Corp\"}\n  ]\n}",
+        "options": {}
+      },
+      "id": "response-extract",
+      "name": "Respond with Extraction",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"audioUrl\": \"https://www.example.com/audio/sample.mp3\"\n}",
+        "options": {}
+      },
+      "id": "response-texttospeech",
+      "name": "Respond with Audio URL",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"transcription\": \"This is the transcribed text from the audio file that was uploaded.\"\n}",
+        "options": {}
+      },
+      "id": "response-transcribe",
+      "name": "Respond with Transcription",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": \"I've processed your request: \" + $json.prompt + \"\\n\\nHere is my response based on your instructions. This could include analysis, suggestions, or other information you requested.\"\n}",
+        "options": {}
+      },
+      "id": "response-prompt",
+      "name": "Respond to Prompt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        650,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "=## Request Information\n\n**Action Type**: {{$node[\"Switch on Action Type\"].json[\"type\"]}}\n\n**Request Data**: ```json\n{{ JSON.stringify($json, null, 2) }}\n```\n\n## Processing Logic\nYou can customize each branch of this workflow to implement different AI functionalities:\n\n1. **Summarize** - Connect to an AI service for text summarization\n2. **Translate** - Implement language translation \n3. **Extract** - Use NLP to extract entities and information\n4. **Text-to-Speech** - Generate audio from text\n5. **Transcribe** - Convert speech to text\n\nEach response returns the JSON format expected by your WhatsApp bot.",
+        "height": 400,
+        "width": 400
+      },
+      "id": "note",
+      "name": "Workflow Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        250,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log received data for debugging\nconsole.log('Webhook received data:', JSON.stringify(items[0].json, null, 2));\n\n// Check if we have a prompt instead of action\nif (items[0].json.prompt && !items[0].json.action) {\n  items[0].json.action = 'prompt';\n}\n\n// If we detect file upload (for transcription)\nif (items[0].binary && Object.keys(items[0].binary).length > 0) {\n  items[0].json.action = 'transcribe';\n}\n\nreturn items;"
+      },
+      "id": "function",
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        350,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Request has Action": {
+      "main": [
+        [
+          {
+            "node": "Switch on Action Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on Action Type": {
+      "main": [
+        [
+          {
+            "node": "Respond with Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Translation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [
+          {
+            "node": "Check if Request has Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "6fd29d28-ba8e-4ce6-97c2-072f81d51180",
+  "id": "WhatsApp AI Assistant",
+  "meta": {
+    "instanceId": "b888bd11f3bbfde95241e5c72aa9d824d7b1841be96f57d7ba9152d94a09"
+  },
+  "tags": [
+    {
+      "name": "WhatsApp",
+      "color": "#02d084"
+    },
+    {
+      "name": "AI",
+      "color": "#86cbe1"
+    }
+  ]
+} 

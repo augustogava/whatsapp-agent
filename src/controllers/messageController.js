@@ -6,6 +6,16 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
+const https = require('https');
+
+// SSL Certificate validation options for development (ignores self-signed certificates)
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false // WARNING: Only use in development environments
+});
+
+// AI webhook URL - PRODUCTION URL
+const AI_SERVICE_URL = 'https://n8n.localhost/webhook-test/webhook-test/9e56fa47-b19d-4dd7-881a-a7b66aa28554';
+const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || ''; // Key might not be needed for this webhook
 
 // Storage for monitoring, schedules
 const monitoredChats = new Map(); // chatId -> {userId, lastCheckedMessageId}
@@ -526,7 +536,7 @@ async function processCommand(incomingMsg, msg, isFromMe) {
         return;
     }
 
-    // In messageController.js, add a new special command for AI
+    // ---------- @ask AI ----------
     if (incomingMsg.startsWith('@ask ')) {
         console.log('[DEBUG] @ask AI command triggered');
         try {
@@ -536,13 +546,14 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             await respond("🤔 Thinking...");
 
             // Call your AI service (example with fetch)
-            const aiResponse = await fetch('https://your-ai-service.com/api', {
+            const aiResponse = await fetch(AI_SERVICE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     question,
                     context: { from: msg.from }
-                })
+                }),
+                agent: httpsAgent
             }).then(res => res.json());
 
             // Send AI's response back
@@ -751,10 +762,6 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             // Send thinking message
             await respond('🧠 Thinking... Processing your AI request...');
             
-            // Configuration for your AI service
-            const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://your-ai-service-url.com/api';
-            const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || 'your-api-key';
-            
             // Make request to AI service
             try {
                 const aiResponse = await fetch(AI_SERVICE_URL, {
@@ -767,7 +774,8 @@ async function processCommand(incomingMsg, msg, isFromMe) {
                         prompt: prompt,
                         user: msg.from,
                         messageId: msg.id._serialized
-                    })
+                    }),
+                    agent: httpsAgent
                 });
                 
                 if (!aiResponse.ok) {
@@ -835,9 +843,6 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             }).join('\n');
             
             // Send to AI for summarization
-            const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://your-ai-service-url.com/api';
-            const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || 'your-api-key';
-            
             const aiResponse = await fetch(AI_SERVICE_URL, {
                 method: 'POST',
                 headers: {
@@ -848,7 +853,8 @@ async function processCommand(incomingMsg, msg, isFromMe) {
                     action: 'summarize',
                     content: chatContent,
                     chatId: chatId
-                })
+                }),
+                agent: httpsAgent
             });
             
             if (!aiResponse.ok) {
@@ -888,9 +894,6 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             await respond(`🔄 Translating to ${language}...`);
             
             // Send to AI for translation
-            const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://your-ai-service-url.com/api';
-            const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || 'your-api-key';
-            
             const aiResponse = await fetch(AI_SERVICE_URL, {
                 method: 'POST',
                 headers: {
@@ -901,7 +904,8 @@ async function processCommand(incomingMsg, msg, isFromMe) {
                     action: 'translate',
                     text: text,
                     language: language
-                })
+                }),
+                agent: httpsAgent
             });
             
             if (!aiResponse.ok) {
@@ -932,9 +936,6 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             await respond('🔍 Extracting important information...');
             
             // Send to AI for information extraction
-            const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://your-ai-service-url.com/api';
-            const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || 'your-api-key';
-            
             const aiResponse = await fetch(AI_SERVICE_URL, {
                 method: 'POST',
                 headers: {
@@ -944,7 +945,8 @@ async function processCommand(incomingMsg, msg, isFromMe) {
                 body: JSON.stringify({
                     action: 'extract',
                     text: text
-                })
+                }),
+                agent: httpsAgent
             });
             
             if (!aiResponse.ok) {
@@ -1168,9 +1170,6 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             fs.writeFileSync(tempFile, media.data, 'base64');
             
             // Send to AI for transcription
-            const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://your-ai-service-url.com/api';
-            const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || 'your-api-key';
-            
             const formData = new FormData();
             formData.append('file', fs.createReadStream(tempFile));
             formData.append('action', 'transcribe');
@@ -1180,7 +1179,8 @@ async function processCommand(incomingMsg, msg, isFromMe) {
                 headers: {
                     'Authorization': `Bearer ${AI_SERVICE_KEY}`
                 },
-                body: formData
+                body: formData,
+                agent: httpsAgent
             });
             
             // Clean up temp file
@@ -1214,9 +1214,6 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             await respond('🔊 Converting text to voice...');
             
             // Send to AI for text-to-speech
-            const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://your-ai-service-url.com/api';
-            const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || 'your-api-key';
-            
             const aiResponse = await fetch(AI_SERVICE_URL, {
                 method: 'POST',
                 headers: {
@@ -1226,7 +1223,8 @@ async function processCommand(incomingMsg, msg, isFromMe) {
                 body: JSON.stringify({
                     action: 'textToSpeech',
                     text: text
-                })
+                }),
+                agent: httpsAgent
             });
             
             if (!aiResponse.ok) {
@@ -1240,7 +1238,7 @@ async function processCommand(incomingMsg, msg, isFromMe) {
             }
             
             // Download the audio file
-            const audioResponse = await fetch(result.audioUrl);
+            const audioResponse = await fetch(result.audioUrl, { agent: httpsAgent });
             const arrayBuffer = await audioResponse.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             
