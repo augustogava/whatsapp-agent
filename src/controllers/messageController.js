@@ -8,9 +8,9 @@ const path = require('path');
 const FormData = require('form-data');
 const https = require('https');
 
-// SSL Certificate validation options for development (ignores self-signed certificates)
+// SSL Certificate validation options
 const httpsAgent = new https.Agent({
-    rejectUnauthorized: false // WARNING: Only use in development environments
+    rejectUnauthorized: process.env.NODE_ENV !== 'production' // Only disable validation in development environments
 });
 
 // AI webhook URL - PRODUCTION URL
